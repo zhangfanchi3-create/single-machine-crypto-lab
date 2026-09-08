@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>信息安全工程实训2 · 单机加解密实验平台</title>
+  <style>
+    :root {
+      --ink: #e8f0ff;
+      --muted: #91a2bd;
+      --line: rgba(154, 184, 231, .18);
+      --panel: rgba(11, 27, 52, .78);
+      --panel-solid: #0d203d;
+      --navy: #071426;
+      --blue: #45a6ff;
+      --cyan: #67e8f9;
+      --gold: #f7c86b;
+      --danger: #ff8b9a;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(34, 114, 216, .22), transparent 30rem),
+        radial-gradient(circle at 92% 0%, rgba(25, 184, 205, .16), transparent 28rem),
+        var(--navy);
+    }
+    .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 56px; }
+    header { display: flex; gap: 20px; justify-content: space-between; align-items: end; margin-bottom: 30px; }
+    .eyebrow { color: var(--cyan); font-size: .76rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { font-size: clamp(1.65rem, 3.4vw, 2.5rem); margin: 8px 0 5px; letter-spacing: .02em; }
+    .lead { color: var(--muted); margin: 0; line-height: 1.65; }
+    .badge { border: 1px solid rgba(103, 232, 249, .42); color: var(--cyan); border-radius: 999px; padding: 8px 13px; font-size: .78rem; white-space: nowrap; }
+    .workspace { display: grid; grid-template-columns: 250px minmax(0, 1fr); overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); box-shadow: 0 24px 64px rgba(0, 0, 0, .28); }
+    aside { padding: 20px 14px; background: rgba(3, 14, 29, .42); border-right: 1px solid var(--line); }
+    .nav-title { margin: 0 10px 12px; color: var(--muted); font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; }
+    .algorithm { width: 100%; border: 0; border-radius: 10px; background: transparent; color: #b5c6df; cursor: pointer; padding: 11px 10px; text-align: left; font: inherit; font-size: .9rem; transition: .18s ease; }
+    .algorithm:hover { background: rgba(71, 166, 255, .09); color: white; }
+    .algorithm.active { color: white; background: linear-gradient(100deg, rgba(50, 144, 255, .29), rgba(91, 225, 235, .12)); box-shadow: inset 3px 0 0 var(--cyan); }
+    main { padding: clamp(20px, 4vw, 38px); }
+    .algorithm-heading { display: flex; justify-content: space-between; gap: 20px; align-items: start; border-bottom: 1px solid var(--line); padding-bottom: 21px; margin-bottom: 24px; }
+    h2 { margin: 0 0 7px; font-size: 1.45rem; }
+    #algorithm-description { max-width: 600px; color: var(--muted); font-size: .93rem; line-height: 1.6; }
+    .tag { color: var(--gold); font-size: .78rem; border: 1px solid rgba(247, 200, 107, .35); border-radius: 999px; padding: 6px 10px; white-space: nowrap; }
+    .form-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(230px, .65fr); gap: 22px; }
+    .stack { display: grid; gap: 17px; }
+    label { display: grid; gap: 8px; color: #cddaf0; font-size: .87rem; font-weight: 600; }
+    .hint { display: block; color: var(--muted); font-weight: 400; font-size: .76rem; line-height: 1.48; }
+    textarea, input {
+      width: 100%; color: #eaf4ff; border: 1px solid rgba(150, 184, 233, .28); border-radius: 10px; outline: none; background: rgba(0, 0, 0, .19); padding: 12px; font: 0.94rem/1.55 Consolas, "Cascadia Code", monospace; transition: border-color .16s, box-shadow .16s;
+    }
+    textarea { resize: vertical; min-height: 162px; }
+    textarea:focus, input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(69, 166, 255, .16); }
+    #algorithm-options { display: grid; gap: 12px; }
+    .option-note { color: var(--muted); border-left: 2px solid rgba(103, 232, 249, .45); padding: 7px 0 7px 11px; font-size: .79rem; line-height: 1.55; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 24px 0 17px; }
+    button.action { appearance: none; border: 1px solid transparent; border-radius: 9px; padding: 10px 15px; color: #06172a; background: linear-gradient(120deg, var(--cyan), #7ab8ff); font: 700 .88rem "Microsoft YaHei", sans-serif; cursor: pointer; transition: transform .16s, filter .16s; }
+    button.action:hover { transform: translateY(-1px); filter: brightness(1.07); }
+    button.action.secondary { color: #c9dcf7; background: rgba(93, 134, 192, .17); border-color: rgba(157, 190, 235, .23); }
+    button.action.warn { color: #ffb3be; background: rgba(189, 49, 76, .13); border-color: rgba(255, 139, 154, .25); }
+    .result { border: 1px solid rgba(103, 232, 249, .24); border-radius: 12px; background: linear-gradient(120deg, rgba(16, 44, 81, .76), rgba(11, 34, 58, .63)); padding: 17px; }
+    .result-head { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 10px; }
+    .result-head strong { color: var(--cyan); font-size: .88rem; }
+    #status { min-height: 1em; color: var(--muted); font-size: .79rem; }
+    #output { white-space: pre-wrap; word-break: break-word; min-height: 60px; font: .91rem/1.6 Consolas, "Cascadia Code", monospace; color: #eef7ff; }
+    .notice { margin: 20px 0 0; padding: 13px 15px; border-radius: 10px; border: 1px solid rgba(247, 200, 107, .23); background: rgba(112, 76, 19, .12); color: #d8c697; font-size: .78rem; line-height: 1.55; }
+    .notice strong { color: var(--gold); }
+    .error { color: var(--danger) !important; }
+    footer { color: #778ba8; font-size: .76rem; text-align: center; margin-top: 18px; }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 20px, 680px); padding-top: 20px; }
+      header { align-items: start; flex-direction: column; }
+      .workspace { grid-template-columns: 1fr; }
+      aside { border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; display: flex; gap: 6px; padding: 10px; }
+      .nav-title { display: none; }
+      .algorithm { width: auto; min-width: max-content; }
+      .form-grid { grid-template-columns: 1fr; }
+      .algorithm-heading { flex-direction: column; gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <div class="eyebrow">Information Security Engineering · Task 1</div>
+        <h1>单机加解密实验平台</h1>
+        <p class="lead">选择一种密码算法，输入数据与参数，直接查看加密、解密、散列或密钥交换结果。</p>
+      </div>
+      <div class="badge">本地运行 · 不上传数据</div>
+    </header>
+
+    <div class="workspace">
+      <aside id="algorithm-nav" aria-label="算法列表"></aside>
+      <main>
+        <section class="algorithm-heading">
+          <div>
+            <h2 id="algorithm-title"></h2>
+            <div id="algorithm-description"></div>
+          </div>
+          <span class="tag" id="algorithm-type"></span>
+        </section>
+
+        <div class="form-grid">
+          <div class="stack">
+            <label id="input-label">输入文本
+              <textarea id="input" spellcheck="false" placeholder="在此输入需要处理的文本"></textarea>
+            </label>
+            <div class="actions">
+              <button class="action" id="encrypt" type="button">加密</button>
+              <button class="action secondary" id="decrypt" type="button">解密</button>
+              <button class="action secondary" id="copy" type="button">复制结果</button>
+              <button class="action warn" id="clear" type="button">清空</button>
+            </div>
+            <section class="result" aria-live="polite">
+              <div class="result-head"><strong>结果</strong><span id="status"></span></div>
+              <div id="output">等待处理…</div>
+            </section>
+          </div>
+          <div class="stack" id="algorithm-options"></div>
+        </div>
+
+        <p class="notice"><strong>实验提示：</strong><span id="notice-text"></span></p>
+      </main>
+    </div>
+    <footer>仅用于课程学习与算法演示。RSA 的短密钥与教学用 DH 参数不适用于真实安全场景。</footer>
+  </div>
+
+  <script>
+    "use strict";
+
+    const $ = (id) => document.getElementById(id);
+    const enc = new TextEncoder();
+    const dec = new TextDecoder();
+    let current = "caesar";
+    let generatedRsa = null;
+
+    const configs = {
+      caesar: {
+        name: "Caesar cipher", type: "单表替代密码",
+        description: "按固定字母位移替换英文字母；非英文字母会原样保留。",
+        inputLabel: "明文或密文", keyLabel: "位移量", keyValue: "3", keyHint: "输入 0–25 的整数。",
+        note: "Caesar 是经典教学密码，密钥空间很小，实际应用中不具备安全性。",
+        encrypt: (text, key) => caesar(text, key), decrypt: (text, key) => caesar(text, -Number(key))
+      },
+      vigenere: {
+        name: "Vigenère cipher", type: "多表替代密码",
+        description: "使用重复关键词对英文字母进行多表替代；非字母不会消耗关键词。",
+        inputLabel: "明文或密文", keyLabel: "关键词", keyValue: "LEMON", keyHint: "仅使用英文字母，例如 LEMON。",
+        note: "该实现保留字母大小写；关键词只接受 A–Z/a–z。",
+        encrypt: (text, key) => vigenere(text, key, 1), decrypt: (text, key) => vigenere(text, key, -1)
+      },
+      playfair: {
+        name: "Playfair cipher", type: "多图替代密码",
+        description: "用关键词生成 5×5 密钥矩阵，并按二元组规则加密英文字母。",
+        inputLabel: "明文或密文（英文字母）", keyLabel: "关键词", keyValue: "MONARCHY", keyHint: "I/J 合并；明文会自动补 X。",
+        note: "解密结果中可能保留为拆分重复字母或补齐长度加入的 X，需要结合原文判断。",
+        encrypt: (text, key) => playfair(text, key, false), decrypt: (text, key) => playfair(text, key, true)
+      },
+      columnar: {
+        name: "Columnar transposition", type: "置换密码",
+        description: "将文本按关键词长度逐行填入矩阵，再按关键词的字典序逐列读出。",
+        inputLabel: "明文或密文", keyLabel: "列关键词", keyValue: "ZEBRAS", keyHint: "至少两个字符；相同字母按从左到右排序。",
+        note: "空格、标点和中文都会作为普通字符参与置换，因此可完整还原输入文本。",
+        encrypt: (text, key) => columnarEncrypt(text, key), decrypt: (text, key) => columnarDecrypt(text, key)
+      },
+      rc4: {
+        name: "RC4", type: "流密码",
+        description: "以密钥初始化状态置换表并生成密钥流，对 UTF-8 字节进行异或。",
+        inputLabel: "明文 / Base64 密文", keyLabel: "RC4 密钥", keyValue: "classroom-key", keyHint: "加密输入明文；解密请粘贴 Base64 密文。",
+        note: "RC4 已存在严重安全弱点，本工具只用于课程算法演示。",
+        encrypt: (text, key) => bytesToBase64(rc4(enc.encode(text), enc.encode(requireKey(key)))),
+        decrypt: (text, key) => dec.decode(rc4(base64ToBytes(text.trim()), enc.encode(requireKey(key))))
+      },
+      aes: {
+        name: "AES-256-GCM", type: "分块密码",
+        description: "使用浏览器 Web Crypto API 的 AES-GCM 模式；口令经 SHA-256 派生为 256 位密钥。",
+        inputLabel: "明文 / v1.格式密文", keyLabel: "口令", keyValue: "classroom-passphrase", keyHint: "使用任意长度口令；每次加密生成随机 IV。",
+        note: "密文格式为 v1.IV.密文（均为 Base64）。这是演示格式，真实系统应使用专业口令 KDF。",
+        encrypt: aesEncrypt, decrypt: aesDecrypt, asynchronous: true
+      },
+      rsa: {
+        name: "RSA", type: "公钥密码",
+        description: "生成两个大素数，使用快速模幂计算，并将 UTF-8 字节逐个进行 RSA 加解密。",
+        inputLabel: "明文 / 以空格分隔的 RSA 密文整数", keyLabel: "RSA 密钥包", keyValue: "", keyHint: "点击“生成 RSA 教学密钥”后自动填充 n|e|d。",
+        note: "为便于观察算法，默认生成 64 位教学密钥并按字节加密，绝不能用于真实通信。",
+        special: "rsa",
+        encrypt: rsaEncrypt, decrypt: rsaDecrypt
+      },
+      md5: {
+        name: "MD5", type: "单向散列函数",
+        description: "将任意 UTF-8 文本计算为固定长度的 128 位十六进制摘要。",
+        inputLabel: "待计算摘要的文本", keyLabel: null,
+        note: "MD5 已不具备抗碰撞安全性；仅用于完成课程要求和理解散列过程。",
+        special: "hash", encrypt: (text) => md5(text)
+      },
+      dh: {
+        name: "Diffie–Hellman", type: "密钥交换",
+        description: "双方在公开参数 p、g 上各自选择私钥，计算公开值并得到相同共享密钥。",
+        inputLabel: "说明", keyLabel: null,
+        note: "默认参数 p=23、g=5 仅用于展示计算过程。实际应用应使用标准大素数群或椭圆曲线 DH。",
+        special: "dh", encrypt: dhDemonstrate
+      }
+    };
+
+    function requireKey(key) {
+      if (!key) throw new Error("请先输入密钥或关键词。");
+      return key;
+    }
+    function normalizeLetters(value, allowSpaces = false) {
+      const out = value.toUpperCase().replace(/J/g, "I").replace(/[^A-Z]/g, "");
+      if (!out && !allowSpaces) throw new Error("请输入至少一个英文字母。");
+      return out;
+    }
+    function orderedColumns(key) {
+      if (key.length < 2) throw new Error("列关键词至少需要两个字符。");
+      return [...key].map((ch, index) => ({ ch, index })).sort((a, b) => a.ch.localeCompare(b.ch) || a.index - b.index);
+    }
+    function caesar(text, shift) {
+      shift = Number(shift);
+      if (!Number.isInteger(shift)) throw new Error("位移量必须是整数。");
+      shift = ((shift % 26) + 26) % 26;
+      return [...text].map(ch => {
+        const code = ch.charCodeAt(0);
+        if (code >= 65 && code <= 90) return String.fromCharCode((code - 65 + shift) % 26 + 65);
+        if (code >= 97 && code <= 122) return String.fromCharCode((code - 97 + shift) % 26 + 97);
+        return ch;
+      }).join("");
+    }
+    function vigenere(text, rawKey, direction) {
+      const key = normalizeLetters(requireKey(rawKey));
+      let index = 0;
+      return [...text].map(ch => {
+        const code = ch.charCodeAt(0);
+        const upper = code >= 65 && code <= 90;
+        const lower = code >= 97 && code <= 122;
+        if (!upper && !lower) return ch;
+        const base = upper ? 65 : 97;
+        const delta = key.charCodeAt(index++ % key.length) - 65;
+        return String.fromCharCode((code - base + direction * delta + 26) % 26 + base);
+      }).join("");
+    }
+    function playfairGrid(rawKey) {
+      const key = normalizeLetters(rawKey, true);
+      const chars = [];
+      for (const ch of key + "ABCDEFGHIKLMNOPQRSTUVWXYZ") if (!chars.includes(ch)) chars.push(ch);
+      return chars;
+    }
+    function playfairPairs(text) {
+      const letters = normalizeLetters(text);
+      const pairs = [];
+      for (let i = 0; i < letters.length;) {
+        const first = letters[i++];
+        let second = letters[i];
+        if (!second || first === second) second = "X"; else i++;
+        pairs.push([first, second]);
+      }
+      return pairs;
+    }
+    function playfair(text, key, decrypting) {
+      const grid = playfairGrid(requireKey(key));
+      const pairs = decrypting ? (normalizeLetters(text).match(/.{1,2}/g) || []).map(p => p.length === 2 ? [...p] : [p, "X"]) : playfairPairs(text);
+      const d = decrypting ? -1 : 1;
+      return pairs.map(([a, b]) => {
+        let ai = grid.indexOf(a), bi = grid.indexOf(b);
+        if (ai < 0 || bi < 0) throw new Error("文本包含无法处理的字母。");
+        const ar = Math.floor(ai / 5), ac = ai % 5, br = Math.floor(bi / 5), bc = bi % 5;
+        if (ar === br) return grid[ar * 5 + (ac + d + 5) % 5] + grid[br * 5 + (bc + d + 5) % 5];
+        if (ac === bc) return grid[((ar + d + 5) % 5) * 5 + ac] + grid[((br + d + 5) % 5) * 5 + bc];
+        return grid[ar * 5 + bc] + grid[br * 5 + ac];
+      }).join("");
+    }
+    function columnarEncrypt(text, key) {
+      key = requireKey(key);
+      const n = key.length, columns = orderedColumns(key), rows = Math.ceil(text.length / n);
+      let out = "";
+      for (const { index } of columns) for (let row = 0; row < rows; row++) {
+        const pos = row * n + index;
+        if (pos < text.length) out += text[pos];
+      }
+      return out;
+    }
+    function columnarDecrypt(text, key) {
+      key = requireKey(key);
+      const n = key.length, columns = orderedColumns(key), rows = Math.ceil(text.length / n), last = text.length % n;
+      const grid = Array(n).fill("");
+      let cursor = 0;
+      for (const { index } of columns) {
+        const length = last === 0 ? rows : (index < last ? rows : rows - 1);
+        grid[index] = text.slice(cursor, cursor + length);
+        cursor += length;
+      }
+      let out = "";
+      for (let row = 0; row < rows; row++) for (let col = 0; col < n; col++) out += grid[col][row] || "";
+      return out;
+    }
+    function rc4(data, key) {
+      if (!key.length) throw new Error("RC4 密钥不能为空。");
+      const s = Array.from({ length: 256 }, (_, i) => i);
+      for (let i = 0, j = 0; i < 256; i++) { j = (j + s[i] + key[i % key.length]) & 255; [s[i], s[j]] = [s[j], s[i]]; }
+      const out = new Uint8Array(data.length);
+      for (let i = 0, j = 0, p = 0; p < data.length; p++) {
+        i = (i + 1) & 255; j = (j + s[i]) & 255; [s[i], s[j]] = [s[j], s[i]];
+        out[p] = data[p] ^ s[(s[i] + s[j]) & 255];
+      }
+      return out;
+    }
+    function bytesToBase64(bytes) {
+      let binary = ""; for (const byte of bytes) binary += String.fromCharCode(byte); return btoa(binary);
+    }
+    function base64ToBytes(value) {
+      try { return Uint8Array.from(atob(value), ch => ch.charCodeAt(0)); } catch { throw new Error("密文不是有效的 Base64 数据。"); }
+    }
+    async function aesKey(passphrase) {
+      if (!crypto.subtle) throw new Error("当前浏览器不支持 Web Crypto。请通过 localhost 打开本文件。 ");
+      const digest = await crypto.subtle.digest("SHA-256", enc.encode(requireKey(passphrase)));
+      return crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+    }
+    async function aesEncrypt(text, passphrase) {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await aesKey(passphrase);
+      const data = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(text));
+      return `v1.${bytesToBase64(iv)}.${bytesToBase64(new Uint8Array(data))}`;
+    }
+    async function aesDecrypt(value, passphrase) {
+      const parts = value.trim().split(".");
+      if (parts.length !== 3 || parts[0] !== "v1") throw new Error("AES 密文必须是 v1.IV.密文 格式。");
+      try {
+        const key = await aesKey(passphrase);
+        const data = await crypto.subtle.decrypt({ name: "AES-GCM", iv: base64ToBytes(parts[1]) }, key, base64ToBytes(parts[2]));
+        return dec.decode(data);
+      } catch (err) { throw new Error("AES 解密失败：口令或密文可能不正确。"); }
+    }
+    function gcd(a, b) { while (b) [a, b] = [b, a % b]; return a; }
+    function modPow(base, exponent, modulus) {
+      let answer = 1n; base %= modulus;
+      while (exponent > 0n) { if (exponent & 1n) answer = answer * base % modulus; base = base * base % modulus; exponent >>= 1n; }
+      return answer;
+    }
+    function modInverse(a, modulus) {
+      let [oldR, r, oldS, s] = [a, modulus, 1n, 0n];
+      while (r) { const q = oldR / r; [oldR, r] = [r, oldR - q * r]; [oldS, s] = [s, oldS - q * s]; }
+      if (oldR !== 1n) throw new Error("指数与 φ(n) 不互素，无法求逆。");
+      return (oldS % modulus + modulus) % modulus;
+    }
+    function randomBigInt(bits) {
+      const bytes = new Uint8Array(Math.ceil(bits / 8)); crypto.getRandomValues(bytes);
+      bytes[0] |= 1 << ((bits - 1) % 8); bytes[bytes.length - 1] |= 1;
+      return BigInt("0x" + [...bytes].map(x => x.toString(16).padStart(2, "0")).join(""));
+    }
+    function isProbablePrime(n) {
+      if (n < 2n) return false;
+      const small = [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n];
+      for (const p of small) { if (n === p) return true; if (n % p === 0n) return false; }
+      let d = n - 1n, s = 0; while (!(d & 1n)) { d >>= 1n; s++; }
+      for (const a of [2n, 325n, 9375n, 28178n, 450775n, 9780504n, 1795265022n]) {
+        if (a % n === 0n) continue;
+        let x = modPow(a, d, n); if (x === 1n || x === n - 1n) continue;
+        let witness = true;
+        for (let r = 1; r < s; r++) { x = x * x % n; if (x === n - 1n) { witness = false; break; } }
+        if (witness) return false;
+      }
+      return true;
+    }
+    function generatePrime(bits = 32) { let p; do { p = randomBigInt(bits); } while (!isProbablePrime(p)); return p; }
+    function generateRsaKey() {
+      const p = generatePrime(), q = generatePrime();
+      const n = p * q, phi = (p - 1n) * (q - 1n);
+      let e = 65537n; if (gcd(e, phi) !== 1n) { e = 3n; while (gcd(e, phi) !== 1n) e += 2n; }
+      const d = modInverse(e, phi);
+      generatedRsa = { p, q, n, phi, e, d };
+      return generatedRsa;
+    }
+    function readRsaKey(raw) {
+      const items = raw.trim().split("|");
+      if (items.length !== 3 || items.some(v => !/^\d+$/.test(v))) throw new Error("RSA 密钥包格式应为 n|e|d。请先生成密钥。 ");
+      return { n: BigInt(items[0]), e: BigInt(items[1]), d: BigInt(items[2]) };
+    }
+    function rsaEncrypt(text, rawKey) {
+      const { n, e } = readRsaKey(rawKey);
+      if (n <= 255n) throw new Error("RSA 模数过小。请重新生成密钥。");
+      return [...enc.encode(text)].map(byte => modPow(BigInt(byte), e, n).toString()).join(" ");
+    }
+    function rsaDecrypt(value, rawKey) {
+      const { n, d } = readRsaKey(rawKey);
+      if (!value.trim()) return "";
+      const values = value.trim().split(/\s+/);
+      try {
+        const bytes = values.map(item => { const c = BigInt(item); if (c >= n) throw new Error(); const m = modPow(c, d, n); if (m > 255n) throw new Error(); return Number(m); });
+        return dec.decode(Uint8Array.from(bytes));
+      } catch { throw new Error("RSA 密文格式错误，或密钥不匹配。 "); }
+    }
+    function md5(input) {
+      const inputBytes = enc.encode(input), bitLength = BigInt(inputBytes.length) * 8n;
+      const paddedLength = Math.ceil((inputBytes.length + 9) / 64) * 64;
+      const bytes = new Uint8Array(paddedLength); bytes.set(inputBytes); bytes[inputBytes.length] = 0x80;
+      for (let i = 0; i < 8; i++) bytes[paddedLength - 8 + i] = Number((bitLength >> BigInt(i * 8)) & 255n);
+      const shifts = [7,12,17,22, 7,12,17,22, 7,12,17,22, 7,12,17,22, 5,9,14,20, 5,9,14,20, 5,9,14,20, 5,9,14,20, 4,11,16,23, 4,11,16,23, 4,11,16,23, 4,11,16,23, 6,10,15,21, 6,10,15,21, 6,10,15,21, 6,10,15,21];
+      const constants = Array.from({ length: 64 }, (_, i) => Math.floor(Math.abs(Math.sin(i + 1)) * 2 ** 32) >>> 0);
+      let h0 = 0x67452301, h1 = 0xefcdab89, h2 = 0x98badcfe, h3 = 0x10325476;
+      const rotl = (x, n) => (x << n) | (x >>> (32 - n));
+      for (let offset = 0; offset < bytes.length; offset += 64) {
+        const words = Array.from({ length: 16 }, (_, i) => bytes[offset + 4*i] | bytes[offset + 4*i+1] << 8 | bytes[offset + 4*i+2] << 16 | bytes[offset + 4*i+3] << 24);
+        let [a, b, c, d] = [h0, h1, h2, h3];
+        for (let i = 0; i < 64; i++) {
+          let f, g;
+          if (i < 16) { f = (b & c) | (~b & d); g = i; }
+          else if (i < 32) { f = (d & b) | (~d & c); g = (5 * i + 1) % 16; }
+          else if (i < 48) { f = b ^ c ^ d; g = (3 * i + 5) % 16; }
+          else { f = c ^ (b | ~d); g = (7 * i) % 16; }
+          const oldD = d; d = c; c = b;
+          b = (b + rotl((a + f + constants[i] + words[g]) >>> 0, shifts[i])) >>> 0; a = oldD;
+        }
+        h0 = (h0 + a) >>> 0; h1 = (h1 + b) >>> 0; h2 = (h2 + c) >>> 0; h3 = (h3 + d) >>> 0;
+      }
+      return [h0, h1, h2, h3].flatMap(word => [word & 255, word >>> 8 & 255, word >>> 16 & 255, word >>> 24 & 255]).map(byte => byte.toString(16).padStart(2, "0")).join("");
+    }
+    function dhDemonstrate() {
+      const p = BigInt($("dh-p").value.trim()), g = BigInt($("dh-g").value.trim()), a = BigInt($("dh-a").value.trim()), b = BigInt($("dh-b").value.trim());
+      if (p <= 3n || g <= 1n || a <= 0n || b <= 0n) throw new Error("DH 参数必须为有效正整数，且 p > 3、g > 1。 ");
+      const A = modPow(g, a, p), B = modPow(g, b, p), alice = modPow(B, a, p), bob = modPow(A, b, p);
+      return `公开参数：p = ${p}，g = ${g}\n\nAlice 私钥 a = ${a}\nAlice 公开值 A = g^a mod p = ${A}\n\nBob 私钥 b = ${b}\nBob 公开值 B = g^b mod p = ${B}\n\nAlice 计算 K = B^a mod p = ${alice}\nBob 计算 K = A^b mod p = ${bob}\n\n共享密钥一致：${alice === bob ? "是" : "否"}（K = ${alice}）`;
+    }
+
+    function optionMarkup(cfg) {
+      if (cfg.special === "dh") return `
+        <label>模数 p <input id="dh-p" value="23" inputmode="numeric"></label>
+        <label>生成元 g <input id="dh-g" value="5" inputmode="numeric"></label>
+        <label>Alice 私钥 a <input id="dh-a" value="6" inputmode="numeric"></label>
+        <label>Bob 私钥 b <input id="dh-b" value="15" inputmode="numeric"></label>
+        <div class="option-note">p 和 g 可以公开；a 与 b 是双方各自保存的私钥。</div>`;
+      if (cfg.special === "rsa") return `
+        <label>${cfg.keyLabel}
+          <input id="key" value="" placeholder="n|e|d" spellcheck="false">
+          <span class="hint">${cfg.keyHint}</span>
+        </label>
+        <button class="action secondary" id="generate-rsa" type="button">生成 RSA 教学密钥</button>
+        <div class="option-note" id="rsa-details">将生成 32 位素数 p、q；展示 n、φ(n)、e、d 的计算结果。</div>`;
+      if (cfg.keyLabel) return `
+        <label>${cfg.keyLabel}
+          <input id="key" value="${cfg.keyValue || ""}" spellcheck="false">
+          <span class="hint">${cfg.keyHint}</span>
+        </label>`;
+      return `<div class="option-note">MD5 不需要密钥。点击“计算 MD5”即可得到 32 位十六进制摘要。</div>`;
+    }
+    function render() {
+      const cfg = configs[current];
+      $("algorithm-nav").innerHTML = `<p class="nav-title">算法模块</p>` + Object.entries(configs).map(([id, item]) => `<button type="button" class="algorithm ${id === current ? "active" : ""}" data-id="${id}">${item.name}</button>`).join("");
+      $("algorithm-title").textContent = cfg.name;
+      $("algorithm-description").textContent = cfg.description;
+      $("algorithm-type").textContent = cfg.type;
+      $("notice-text").textContent = cfg.note;
+      $("input-label").childNodes[0].textContent = cfg.inputLabel;
+      $("input").placeholder = cfg.special === "dh" ? "使用右侧参数并点击“演示 DH 交换过程”。" : "在此输入需要处理的文本";
+      $("input").value = cfg.special === "dh" ? "" : $("input").value;
+      $("algorithm-options").innerHTML = optionMarkup(cfg);
+      $("output").textContent = "等待处理…"; $("status").textContent = "";
+      $("encrypt").style.display = ""; $("decrypt").style.display = "";
+      $("encrypt").textContent = cfg.special === "hash" ? "计算 MD5" : cfg.special === "dh" ? "演示 DH 交换过程" : "加密";
+      $("decrypt").style.display = (cfg.special === "hash" || cfg.special === "dh") ? "none" : "";
+      if (cfg.special === "rsa") $("generate-rsa").addEventListener("click", () => {
+        try {
+          const key = generateRsaKey(); $("key").value = `${key.n}|${key.e}|${key.d}`;
+          $("rsa-details").textContent = `p=${key.p}；q=${key.q}；n=${key.n}；φ(n)=${key.phi}；e=${key.e}；d=${key.d}`;
+          setStatus("RSA 教学密钥已生成。", false);
+        } catch (err) { setStatus(err.message, true); }
+      });
+      document.querySelectorAll(".algorithm").forEach(button => button.addEventListener("click", () => { current = button.dataset.id; render(); }));
+    }
+    function setStatus(message, isError) { const s = $("status"); s.textContent = message; s.classList.toggle("error", Boolean(isError)); }
+    async function process(mode) {
+      const cfg = configs[current];
+      try {
+        const action = mode === "decrypt" ? cfg.decrypt : cfg.encrypt;
+        if (!action) throw new Error("当前算法不支持此操作。");
+        const key = $("key") ? $("key").value : "";
+        $("output").textContent = "正在计算…"; setStatus("处理中…", false);
+        const output = await action($("input").value, key);
+        $("output").textContent = output === "" ? "（空结果）" : output;
+        setStatus(mode === "decrypt" ? "解密完成" : cfg.special === "hash" ? "摘要计算完成" : cfg.special === "dh" ? "密钥交换演示完成" : "加密完成", false);
+      } catch (err) { $("output").textContent = "处理失败"; setStatus(err.message || "未知错误", true); }
+    }
+    $("encrypt").addEventListener("click", () => process("encrypt"));
+    $("decrypt").addEventListener("click", () => process("decrypt"));
+    $("clear").addEventListener("click", () => { $("input").value = ""; $("output").textContent = "等待处理…"; setStatus("已清空", false); });
+    $("copy").addEventListener("click", async () => {
+      const text = $("output").textContent;
+      try { await navigator.clipboard.writeText(text); setStatus("结果已复制", false); }
+      catch { const box = document.createElement("textarea"); box.value = text; document.body.append(box); box.select(); document.execCommand("copy"); box.remove(); setStatus("结果已复制", false); }
+    });
+    render();
+  </script>
+</body>
+</html>

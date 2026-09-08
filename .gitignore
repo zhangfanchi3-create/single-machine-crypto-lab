@@ -1,0 +1,29 @@
+# Compiled output
+*.exe
+*.o
+*.obj
+*.dll
+
+# Course submissions and archives
+*.zip
+*.rar
+*.7z
+*.doc
+*.docx
+*.ppt
+*.pptx
+
+# Local tools and generated files
+.claude/
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+build/
+dist/
+tmp/
+_*/
+
+# OS files
+Thumbs.db
+.DS_Store
